@@ -1,8 +1,8 @@
-## 🚀 Welcome to tokocrypto-cli CLI v0.1.11
+## 🚀 Welcome to tokocrypto-cli CLI v0.1.12
 
 The unofficial, fast, and feature-rich command-line interface for **Tokocrypto**.
 
-### 🆕 What's New in v0.1.11
+### 🆕 What's New in v0.1.12
 
 - **🔄 Standardized Workflow**: Aligned with the Indodax-CLI development and release lifecycle.
 - **🛡️ Security**: Improved credential management and SSL/TLS handling.
