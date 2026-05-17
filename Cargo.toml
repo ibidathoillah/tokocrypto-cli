@@ -1,6 +1,6 @@
 [package]
 name = "tokocrypto-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Unofficial command-line interface for the Tokocrypto exchange"
 license = "MIT"
