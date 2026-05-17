@@ -7,14 +7,14 @@ use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::errors::TokocryptoError;
 use crate::output::CommandOutput;
-use crate::AppContext;
+use crate::{normalize_pair, normalize_pair_ws, AppContext};
 
 #[derive(Debug, Subcommand)]
 pub enum WebSocketCommand {
     /// Stream order book depth updates
     Depth {
-        /// Trading pair (e.g., BTC_USDT, TKO_BIDR)
-        symbol: String,
+        /// Trading pair (e.g., BTC_USDT, TKO-BIDR, or TKO/BIDR)
+        pair: String,
 
         /// Stop after receiving this many data messages
         #[arg(short, long)]
@@ -64,21 +64,29 @@ impl WebSocketCommand {
     pub async fn execute(&self, ctx: &AppContext) -> Result<CommandOutput, TokocryptoError> {
         match self {
             Self::Depth {
-                symbol,
+                pair,
                 limit,
                 seconds,
                 symbol_type,
             } => {
                 let bounds = StreamBounds::new(*limit, *seconds);
-                stream_market_depth(ctx, symbol, *symbol_type, bounds).await?;
+                stream_market_depth(ctx, pair, *symbol_type, bounds).await?;
             }
 
-            Self::Orders { limit, seconds, symbol_type } => {
+            Self::Orders {
+                limit,
+                seconds,
+                symbol_type,
+            } => {
                 let bounds = StreamBounds::new(*limit, *seconds);
                 stream_user(ctx, "orders", *symbol_type, bounds).await?;
             }
 
-            Self::Balances { limit, seconds, symbol_type } => {
+            Self::Balances {
+                limit,
+                seconds,
+                symbol_type,
+            } => {
                 let bounds = StreamBounds::new(*limit, *seconds);
                 stream_user(ctx, "balances", *symbol_type, bounds).await?;
             }
@@ -119,20 +127,23 @@ async fn stream_market_depth(
 
     let sym_type = match symbol_type_opt {
         Some(t) => t,
-        None => crate::commands::market::detect_symbol_type(&ctx.client, symbol).await,
+        None => crate::commands::market::detect_symbol_type(&ctx.client, &normalize_pair(symbol)).await,
     };
 
     let ws_url = if sym_type == 1 {
         // Main symbols: lowercase, no underscores. Base: wss://stream-cloud.tokocrypto.site/ws
-        let clean_symbol = symbol.replace("_", "").to_lowercase();
-        format!("wss://stream-cloud.tokocrypto.site/ws/{}@depth", clean_symbol)
+        let clean_symbol = normalize_pair_ws(symbol, sym_type);
+        format!(
+            "wss://stream-cloud.tokocrypto.site/ws/{}@depth",
+            clean_symbol
+        )
     } else if sym_type == 2 {
         // Next symbols: lowercase, kept underscores. Base: wss://www.tokocrypto.com/ws
-        let clean_symbol = symbol.to_lowercase();
+        let clean_symbol = normalize_pair_ws(symbol, sym_type);
         format!("wss://www.tokocrypto.com/ws/{}@depth", clean_symbol)
     } else {
         // Nextme symbols: lowercase, no underscores. Base: wss://stream-toko.2meta.app/ws
-        let clean_symbol = symbol.replace("_", "").to_lowercase();
+        let clean_symbol = normalize_pair_ws(symbol, sym_type);
         format!("wss://stream-toko.2meta.app/ws/{}@depth", clean_symbol)
     };
 
@@ -142,7 +153,11 @@ async fn stream_market_depth(
         .await
         .map_err(|e| TokocryptoError::WebSocket(e.to_string()))?;
 
-    eprintln!("{} Subscribed to depth updates for {}", "WS".green().bold(), symbol.to_uppercase());
+    eprintln!(
+        "{} Subscribed to depth updates for {}",
+        "WS".green().bold(),
+        normalize_pair(symbol)
+    );
 
     let mut data_count = 0usize;
     let deadline = bounds.deadline();
@@ -165,7 +180,10 @@ async fn stream_market_depth(
                 let _ = ws.send(Message::Pong(payload)).await;
             }
             Ok(Message::Close(_)) => {
-                eprintln!("{} Connection closed by remote server", "WS".yellow().bold());
+                eprintln!(
+                    "{} Connection closed by remote server",
+                    "WS".yellow().bold()
+                );
                 break;
             }
             Err(e) => {
@@ -191,10 +209,16 @@ async fn stream_user(
 ) -> Result<(), TokocryptoError> {
     use colored::Colorize;
 
-    eprintln!("{} Requesting listenKey from Tokocrypto...", "WS".cyan().bold());
+    eprintln!(
+        "{} Requesting listenKey from Tokocrypto...",
+        "WS".cyan().bold()
+    );
 
     // 1. Get listenKey (listenToken)
-    let resp = ctx.client.post_signed("/open/v1/user-listen-token", &[]).await?;
+    let resp = ctx
+        .client
+        .post_signed("/open/v1/user-listen-token", &[])
+        .await?;
     let listen_key = resp["data"]["token"]
         .as_str()
         .or_else(|| resp["data"]["listenKey"].as_str())
@@ -203,7 +227,10 @@ async fn stream_user(
         .or_else(|| resp["listenToken"].as_str())
         .ok_or_else(|| TokocryptoError::Api {
             code: -1,
-            message: format!("Failed to extract listenKey/listenToken from response: {}", resp),
+            message: format!(
+                "Failed to extract listenKey/listenToken from response: {}",
+                resp
+            ),
         })?
         .to_string();
 
@@ -219,7 +246,10 @@ async fn stream_user(
         .await
         .map_err(|e| TokocryptoError::WebSocket(e.to_string()))?;
 
-    eprintln!("{} Successfully connected to private stream", "WS".green().bold());
+    eprintln!(
+        "{} Successfully connected to private stream",
+        "WS".green().bold()
+    );
 
     // 3. Spawn a task to keep the listenKey alive (sent every 30 minutes)
     let client_clone = ctx.client.clone();
@@ -234,7 +264,9 @@ async fn stream_user(
                 ("listenToken", lk_clone.as_str()),
                 ("token", lk_clone.as_str()),
             ];
-            let _ = client_clone.put_public("/open/v1/user-listen-token", &params).await;
+            let _ = client_clone
+                .put_public("/open/v1/user-listen-token", &params)
+                .await;
             eprintln!("{} Sent listenKey keep-alive", "WS".blue().bold());
         }
     });
@@ -256,7 +288,9 @@ async fn stream_user(
                     // Filter based on requested channel
                     let matches_channel = match channel_type {
                         "orders" => event == "executionReport" || event.contains("Order"),
-                        "balances" => event == "outboundAccountPosition" || event.contains("Balance"),
+                        "balances" => {
+                            event == "outboundAccountPosition" || event.contains("Balance")
+                        }
                         _ => true,
                     };
 

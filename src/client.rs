@@ -360,7 +360,11 @@ impl TokocryptoClient {
     }
 
     /// Send an unsigned POST (for listenKey creation etc.).
-    pub async fn post_public(&self, endpoint: &str, params: &[(&str, &str)]) -> Result<Value, TokocryptoError> {
+    pub async fn post_public(
+        &self,
+        endpoint: &str,
+        params: &[(&str, &str)],
+    ) -> Result<Value, TokocryptoError> {
         let url = self.resolve_url(endpoint);
         let builder = self.http.post(&url).headers(self.headers()).query(params);
         let resp = self.send_with_retry(builder).await?;
@@ -372,7 +376,11 @@ impl TokocryptoClient {
     }
 
     /// Send an unsigned PUT (for listenKey keep-alive).
-    pub async fn put_public(&self, endpoint: &str, params: &[(&str, &str)]) -> Result<Value, TokocryptoError> {
+    pub async fn put_public(
+        &self,
+        endpoint: &str,
+        params: &[(&str, &str)],
+    ) -> Result<Value, TokocryptoError> {
         let url = self.resolve_url(endpoint);
         let builder = self.http.put(&url).headers(self.headers()).query(params);
         let resp = self.send_with_retry(builder).await?;
@@ -384,7 +392,11 @@ impl TokocryptoClient {
     }
 
     /// Send an unsigned DELETE (for listenKey close).
-    pub async fn delete_public(&self, endpoint: &str, params: &[(&str, &str)]) -> Result<Value, TokocryptoError> {
+    pub async fn delete_public(
+        &self,
+        endpoint: &str,
+        params: &[(&str, &str)],
+    ) -> Result<Value, TokocryptoError> {
         let url = self.resolve_url(endpoint);
         let builder = self.http.delete(&url).headers(self.headers()).query(params);
         let resp = self.send_with_retry(builder).await?;

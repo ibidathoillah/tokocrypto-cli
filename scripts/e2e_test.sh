@@ -19,6 +19,7 @@ set -euo pipefail
 BINARY="${TOKOCRYPTO_BIN:-./target/debug/tokocrypto}"
 PAIR="${TOKOCRYPTO_TEST_PAIR:-TKO_IDR}"
 PAIR_LOWER=$(echo "$PAIR" | tr '[:upper:]' '[:lower:]')
+PAIR_FLEX="${TOKOCRYPTO_TEST_PAIR_FLEX:-tko/idr}"
 TEST_COIN="${TOKOCRYPTO_TEST_COIN:-USDT}"
 
 # Counters
@@ -168,20 +169,20 @@ run_test "market symbols (json)" \
 run_test "market execution-rules --symbol $PAIR (table)" \
     $BINARY execution-rules --pair "$PAIR"
 
-run_test_json "market execution-rules --symbol $PAIR (json)" \
-    $BINARY -o json execution-rules --pair "$PAIR"
+run_test_json "market execution-rules --pair $PAIR_FLEX (json)" \
+    $BINARY -o json execution-rules --pair "$PAIR_FLEX"
 
 run_test "market depth $PAIR (table)" \
     $BINARY orderbook "$PAIR" --count 5
 
-run_test_json "market depth $PAIR (json)" \
-    $BINARY -o json orderbook "$PAIR" --count 5
+run_test_json "market depth $PAIR_FLEX (json)" \
+    $BINARY -o json orderbook "$PAIR_FLEX" --count 5
 
 run_test_json "market trades $PAIR (limit=5)" \
     $BINARY -o json trades "$PAIR" --count 5
 
-run_test_json "market agg-trades $PAIR (limit=5)" \
-    $BINARY -o json agg-trades "$PAIR" --count 5
+run_test_json "market agg-trades $PAIR_FLEX (limit=5)" \
+    $BINARY -o json agg-trades "$PAIR_FLEX" --count 5
 
 run_test_json "market klines $PAIR (limit=5)" \
     $BINARY -o json klines "$PAIR" --count 5
@@ -269,8 +270,8 @@ if $HAS_CREDS; then
     run_test_json "account assets $TEST_COIN" \
         $BINARY -o json assets "$TEST_COIN"
 
-    run_test "trade open-orders $PAIR" \
-        $BINARY -o json order open-orders "$PAIR"
+    run_test "trade open-orders $PAIR_FLEX" \
+        $BINARY -o json order open-orders "$PAIR_FLEX"
 
     run_test "trade all-orders $PAIR" \
         $BINARY -o json order all-orders "$PAIR"
@@ -307,8 +308,8 @@ if $RUN_WS; then
 
 log_header "WEBSOCKET — Market & User Streams"
 
-run_test "ws depth $PAIR" \
-    $BINARY -o json ws depth "$PAIR" --limit 1 --seconds 15
+run_test "ws depth $PAIR_FLEX" \
+    $BINARY -o json ws depth "$PAIR_FLEX" --limit 1 --seconds 15
 
 AUTH_TEST_OUTPUT=""
 AUTH_TEST_EXIT=0

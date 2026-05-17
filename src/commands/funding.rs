@@ -102,11 +102,17 @@ impl FundingCommand {
                 }
 
                 let result = client.post_signed("/open/v1/withdraws", &params).await?;
-                CommandOutput::new(result, "Withdraw Result")
-                    .with_addendum(format!("Withdrawal of {} {} submitted successfully", amount, coin))
+                CommandOutput::new(result, "Withdraw Result").with_addendum(format!(
+                    "Withdrawal of {} {} submitted successfully",
+                    amount, coin
+                ))
             }
 
-            Self::WithdrawHistory { coin, status, limit } => {
+            Self::WithdrawHistory {
+                coin,
+                status,
+                limit,
+            } => {
                 let limit_str = limit.to_string();
                 let status_str = status.map(|s| s.to_string());
 
@@ -122,7 +128,11 @@ impl FundingCommand {
                 CommandOutput::new(result, "Withdraw History")
             }
 
-            Self::DepositHistory { coin, status, limit } => {
+            Self::DepositHistory {
+                coin,
+                status,
+                limit,
+            } => {
                 let limit_str = limit.to_string();
                 let status_str = status.map(|s| s.to_string());
 
@@ -149,7 +159,9 @@ impl FundingCommand {
                     params.push(("network", net.as_str()));
                 }
 
-                let result = client.get_signed("/open/v1/deposits/address", &params).await?;
+                let result = client
+                    .get_signed("/open/v1/deposits/address", &params)
+                    .await?;
                 CommandOutput::new(result, format!("Deposit Address — {}", coin_upper))
             }
         };

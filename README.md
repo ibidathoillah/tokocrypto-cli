@@ -17,6 +17,7 @@ Unofficial Rust CLI for Tokocrypto. Use it to inspect markets, manage account da
 - Dynamic multi-host routing: symbol type detection for Main, Next, and Nextme markets across REST and WebSocket hosts.
 - Real-time streams: market depth, private order events, and private balance events.
 - Interactive shell: REPL with autocomplete and persistent history at `~/.config/tokocrypto/history`.
+- Paper trading: local simulated balances and orders stored in `~/.config/tokocrypto/paper_state.json`.
 - Automation-friendly output: human tables by default, JSON envelopes with `-o json`.
 - Credential resolution: CLI flags, environment variables, or `~/.config/tokocrypto/config.toml`.
 - Agent support: MCP server mode for tool discovery and JSON-RPC execution.
@@ -53,9 +54,9 @@ Market data does not require credentials:
 tokocrypto ping
 tokocrypto server-time
 tokocrypto symbols
-tokocrypto execution-rules --pair TKO_IDR
-tokocrypto orderbook TKO_IDR --count 10
-tokocrypto -o json trades TKO_IDR --count 5
+tokocrypto execution-rules --pair tko/idr
+tokocrypto orderbook tko/idr --count 10
+tokocrypto -o json trades tko/idr --count 5
 ```
 
 Configure private API credentials:
@@ -100,12 +101,12 @@ Options:
 tokocrypto ping
 tokocrypto server-time
 tokocrypto symbols
-tokocrypto execution-rules --pair TKO_IDR
-tokocrypto execution-rules --pairs TKO_IDR,BTC_USDT
-tokocrypto orderbook TKO_IDR --count 10
-tokocrypto trades TKO_IDR --count 5
-tokocrypto agg-trades TKO_IDR --count 5
-tokocrypto klines TKO_IDR --interval 1h --count 5
+tokocrypto execution-rules --pair tko/idr
+tokocrypto execution-rules --pairs tko/idr,btc/usdt
+tokocrypto orderbook tko/idr --count 10
+tokocrypto trades tko/idr --count 5
+tokocrypto agg-trades tko/idr --count 5
+tokocrypto klines tko/idr --interval 1h --count 5
 ```
 
 ### Account
@@ -113,38 +114,58 @@ tokocrypto klines TKO_IDR --interval 1h --count 5
 ```bash
 tokocrypto account-info
 tokocrypto balance
-tokocrypto assets USDT
-tokocrypto trades-history TKO_IDR --count 5
+tokocrypto assets usdt
+tokocrypto trades-history tko/idr --count 5
 ```
 
 ### Trading
 
 ```bash
-tokocrypto order buy TKO_IDR -t LIMIT --price 1000 --volume 10
-tokocrypto order sell TKO_IDR -t MARKET --volume 10
+tokocrypto order buy tko/idr -t LIMIT --price 1000 --volume 10
+tokocrypto order sell tko/idr -t MARKET --volume 10
 tokocrypto order cancel --order-id 123456
 tokocrypto order query --order-id 123456
-tokocrypto order open-orders TKO_IDR
-tokocrypto order all-orders TKO_IDR --count 5
-tokocrypto order oco TKO_IDR --side SELL --volume 10 --price 1200 --stop-price 900 --stop-limit-price 890
+tokocrypto order open-orders tko/idr
+tokocrypto order all-orders tko/idr --count 5
+tokocrypto order oco tko/idr --side SELL --volume 10 --price 1200 --stop-price 900 --stop-limit-price 890
 ```
 
 ### Funding
 
 ```bash
-tokocrypto deposit addresses USDT --network BSC
-tokocrypto deposit status --asset USDT
-tokocrypto withdrawal status --asset USDT
-tokocrypto withdraw --asset USDT --volume 100 --address 0x... --network BSC
+tokocrypto deposit addresses usdt --network BSC
+tokocrypto deposit status --asset usdt
+tokocrypto withdrawal status --asset usdt
+tokocrypto withdraw --asset usdt --volume 100 --address 0x... --network BSC
 ```
+
+### Paper Trading
+
+```bash
+tokocrypto paper init --pair tko/idr --quote-balance 100000000 --base-balance 5000
+tokocrypto paper balance
+tokocrypto paper buy tko/idr --price 1000 --volume 10
+tokocrypto paper sell tko/idr --price 1200 --volume 10
+tokocrypto paper fill 1
+tokocrypto paper orders
+tokocrypto paper orders --all
+tokocrypto paper cancel 2
+tokocrypto paper cancel-all --pair tko/idr
+tokocrypto paper topup idr 5000000
+tokocrypto paper history
+tokocrypto paper status
+tokocrypto paper reset
+```
+
+Use `--fill` on `paper buy` or `paper sell` to immediately settle an order at the supplied price.
 
 ### WebSocket Streaming
 
 Market depth:
 
 ```bash
-tokocrypto ws depth TKO_IDR
-tokocrypto ws depth TKO_IDR --limit 1 --seconds 15
+tokocrypto ws depth tko/idr
+tokocrypto ws depth tko/idr --limit 1 --seconds 15
 ```
 
 Private streams:
@@ -198,8 +219,8 @@ The repository includes live API smoke tests:
 Environment knobs:
 
 ```bash
-TOKOCRYPTO_TEST_PAIR=TKO_IDR
-TOKOCRYPTO_TEST_COIN=USDT
+TOKOCRYPTO_TEST_PAIR=tko/idr
+TOKOCRYPTO_TEST_COIN=usdt
 TOKOCRYPTO_BIN=./target/debug/tokocrypto
 ```
 

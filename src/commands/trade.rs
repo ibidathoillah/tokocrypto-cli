@@ -2,7 +2,7 @@ use clap::Subcommand;
 
 use crate::errors::TokocryptoError;
 use crate::output::CommandOutput;
-use crate::AppContext;
+use crate::{normalize_pair, AppContext};
 
 #[derive(Debug, Subcommand)]
 pub enum OrderCommand {
@@ -217,7 +217,10 @@ impl OrderCommand {
                 .await?
             }
 
-            Self::Cancel { order_id, client_id } => {
+            Self::Cancel {
+                order_id,
+                client_id,
+            } => {
                 let mut params = Vec::new();
                 let oid_str;
                 if let Some(id) = order_id {
@@ -234,11 +237,16 @@ impl OrderCommand {
                     ));
                 }
 
-                let result = client.post_signed("/open/v1/orders/cancel", &params).await?;
+                let result = client
+                    .post_signed("/open/v1/orders/cancel", &params)
+                    .await?;
                 CommandOutput::new(result, "Cancel Order Result")
             }
 
-            Self::Query { order_id, client_id } => {
+            Self::Query {
+                order_id,
+                client_id,
+            } => {
                 let oid_str = order_id.to_string();
                 let mut params = vec![("orderId", oid_str.as_str())];
                 if let Some(ref cid) = client_id {
@@ -250,7 +258,7 @@ impl OrderCommand {
             }
 
             Self::OpenOrders { pair, count } => {
-                let sym = pair.to_uppercase();
+                let sym = normalize_pair(pair);
                 let limit_str = count.to_string();
                 let params = vec![
                     ("symbol", sym.as_str()),
@@ -262,8 +270,13 @@ impl OrderCommand {
                 CommandOutput::new(result, format!("Open Orders — {}", sym))
             }
 
-            Self::AllOrders { pair, count, r#type, from_id } => {
-                let sym = pair.to_uppercase();
+            Self::AllOrders {
+                pair,
+                count,
+                r#type,
+                from_id,
+            } => {
+                let sym = normalize_pair(pair);
                 let limit_str = count.to_string();
                 let type_str = r#type.to_string();
                 let mut params = vec![
@@ -290,7 +303,7 @@ impl OrderCommand {
                 stop_limit_price,
                 list_client_id,
             } => {
-                let sym = pair.to_uppercase();
+                let sym = normalize_pair(pair);
                 let side_code = match side.to_uppercase().as_str() {
                     "BUY" => "0",
                     "SELL" => "1",
@@ -334,7 +347,7 @@ impl OrderCommand {
         iceberg_qty: Option<&str>,
     ) -> Result<CommandOutput, TokocryptoError> {
         let client = &ctx.client;
-        let sym = symbol.to_uppercase();
+        let sym = normalize_pair(symbol);
 
         let side_code = match side {
             "BUY" => "0",

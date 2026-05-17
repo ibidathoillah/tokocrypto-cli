@@ -15,8 +15,8 @@ pub async fn run_shell(ctx: &AppContext) -> Result<(), TokocryptoError> {
     println!("{}", "╚══════════════════════════════════════════╝".cyan());
     println!();
 
-    let mut rl =
-        DefaultEditor::new().map_err(|e| TokocryptoError::Io(std::io::Error::other(e.to_string())))?;
+    let mut rl = DefaultEditor::new()
+        .map_err(|e| TokocryptoError::Io(std::io::Error::other(e.to_string())))?;
 
     let history_path = crate::config::Config::history_path()?;
     // Ensure parent directory exists for history file

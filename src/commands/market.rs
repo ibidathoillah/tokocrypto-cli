@@ -122,13 +122,15 @@ impl MarketCommand {
         let output = match self {
             Self::Ping => {
                 let result = client.get_public("/open/v1/common/time", &[]).await?;
-                CommandOutput::new(result, "Ping")
-                    .with_addendum("Tokocrypto API is reachable")
+                CommandOutput::new(result, "Ping").with_addendum("Tokocrypto API is reachable")
             }
 
             Self::ServerTime => {
                 let result = client.get_public("/open/v1/common/time", &[]).await?;
-                let ts = result["timestamp"].as_u64().or_else(|| result["data"].as_u64()).unwrap_or(0);
+                let ts = result["timestamp"]
+                    .as_u64()
+                    .or_else(|| result["data"].as_u64())
+                    .unwrap_or(0);
                 let dt = chrono::DateTime::from_timestamp_millis(ts as i64)
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string())
                     .unwrap_or_else(|| ts.to_string());
@@ -141,7 +143,11 @@ impl MarketCommand {
                 CommandOutput::new(result, "Supported Trading Symbols")
             }
 
-            Self::ExecutionRules { symbol, symbols, status } => {
+            Self::ExecutionRules {
+                symbol,
+                symbols,
+                status,
+            } => {
                 let mut params = Vec::new();
                 let s_str;
                 let ss_str;
@@ -158,12 +164,17 @@ impl MarketCommand {
                 }
 
                 // Base endpoint override is https://www.tokocrypto.site
-                let endpoint = format!("{}/api/v3/executionRules", crate::config::DEFAULT_SITE_HOST);
+                let endpoint =
+                    format!("{}/api/v3/executionRules", crate::config::DEFAULT_SITE_HOST);
                 let result = client.get_public(&endpoint, &params).await?;
                 CommandOutput::new(result, "Execution Rules (Price Range)")
             }
 
-            Self::Depth { symbol, limit, symbol_type } => {
+            Self::Depth {
+                symbol,
+                limit,
+                symbol_type,
+            } => {
                 let sym_type = match symbol_type {
                     Some(t) => *t,
                     None => detect_symbol_type(client, symbol).await,
@@ -175,18 +186,36 @@ impl MarketCommand {
                     // Replace _ of symbol with empty string
                     let clean_symbol = symbol.replace("_", "").to_uppercase();
                     let endpoint = format!("{}/api/v3/depth", crate::config::DEFAULT_SITE_HOST);
-                    client.get_public(&endpoint, &[("symbol", &clean_symbol), ("limit", &limit_str)]).await?
+                    client
+                        .get_public(
+                            &endpoint,
+                            &[("symbol", &clean_symbol), ("limit", &limit_str)],
+                        )
+                        .await?
                 } else {
                     // Symbol type 3 uses https://cloudme-toko.2meta.app/api/v1/depth
                     let clean_symbol = symbol.replace("_", "").to_uppercase();
                     let endpoint = format!("{}/api/v1/depth", crate::config::CLOUDME_HOST);
-                    client.get_public(&endpoint, &[("symbol", &clean_symbol), ("limit", &limit_str)]).await?
+                    client
+                        .get_public(
+                            &endpoint,
+                            &[("symbol", &clean_symbol), ("limit", &limit_str)],
+                        )
+                        .await?
                 };
 
-                CommandOutput::new(result, format!("Order Book Depth — {}", symbol.to_uppercase()))
+                CommandOutput::new(
+                    result,
+                    format!("Order Book Depth — {}", symbol.to_uppercase()),
+                )
             }
 
-            Self::Trades { symbol, from_id, limit, symbol_type } => {
+            Self::Trades {
+                symbol,
+                from_id,
+                limit,
+                symbol_type,
+            } => {
                 let sym_type = match symbol_type {
                     Some(t) => *t,
                     None => detect_symbol_type(client, symbol).await,
@@ -216,7 +245,14 @@ impl MarketCommand {
                 CommandOutput::new(result, format!("Recent Trades — {}", symbol.to_uppercase()))
             }
 
-            Self::AggTrades { symbol, from_id, start_time, end_time, limit, symbol_type } => {
+            Self::AggTrades {
+                symbol,
+                from_id,
+                start_time,
+                end_time,
+                limit,
+                symbol_type,
+            } => {
                 let sym_type = match symbol_type {
                     Some(t) => *t,
                     None => detect_symbol_type(client, symbol).await,
@@ -250,10 +286,20 @@ impl MarketCommand {
                     client.get_public(&endpoint, &params).await?
                 };
 
-                CommandOutput::new(result, format!("Aggregate Trades — {}", symbol.to_uppercase()))
+                CommandOutput::new(
+                    result,
+                    format!("Aggregate Trades — {}", symbol.to_uppercase()),
+                )
             }
 
-            Self::Klines { symbol, interval, start_time, end_time, limit, symbol_type } => {
+            Self::Klines {
+                symbol,
+                interval,
+                start_time,
+                end_time,
+                limit,
+                symbol_type,
+            } => {
                 let sym_type = match symbol_type {
                     Some(t) => *t,
                     None => detect_symbol_type(client, symbol).await,
@@ -265,7 +311,7 @@ impl MarketCommand {
 
                 let mut params = vec![
                     ("interval", interval.as_str()),
-                    ("limit", limit_str.as_str())
+                    ("limit", limit_str.as_str()),
                 ];
                 if let Some(ref st) = start_time_str {
                     params.push(("startTime", st.as_str()));

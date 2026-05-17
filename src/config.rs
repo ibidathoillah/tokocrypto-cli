@@ -64,8 +64,9 @@ fn default_host() -> String {
 impl Config {
     /// Returns the config directory: `~/.config/tokocrypto`
     pub fn config_dir() -> Result<PathBuf, TokocryptoError> {
-        let config_dir = dirs::config_dir()
-            .ok_or_else(|| TokocryptoError::Config("Cannot determine config directory".to_string()))?;
+        let config_dir = dirs::config_dir().ok_or_else(|| {
+            TokocryptoError::Config("Cannot determine config directory".to_string())
+        })?;
         Ok(config_dir.join("tokocrypto"))
     }
 
@@ -77,6 +78,11 @@ impl Config {
     /// Returns the shell history file path: `~/.config/tokocrypto/history`
     pub fn history_path() -> Result<PathBuf, TokocryptoError> {
         Ok(Self::config_dir()?.join("history"))
+    }
+
+    /// Returns the paper trading state file path: `~/.config/tokocrypto/paper_state.json`
+    pub fn paper_state_path() -> Result<PathBuf, TokocryptoError> {
+        Ok(Self::config_dir()?.join("paper_state.json"))
     }
 
     /// Load config from disk. Returns default config if file doesn't exist.
@@ -173,7 +179,10 @@ pub struct Credentials {
 
 impl Credentials {
     /// Resolve credentials from available sources.
-    pub fn resolve(cli_key: Option<&str>, cli_secret: Option<&str>) -> Result<Self, TokocryptoError> {
+    pub fn resolve(
+        cli_key: Option<&str>,
+        cli_secret: Option<&str>,
+    ) -> Result<Self, TokocryptoError> {
         // 1. CLI flags
         if let (Some(key), Some(secret)) = (cli_key, cli_secret) {
             return Ok(Self {

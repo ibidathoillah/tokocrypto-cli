@@ -17,7 +17,10 @@ pub fn sign_params(secret_key: &str, query: &str, server_time: u64, recv_window:
     let mut signed = if query.is_empty() {
         format!("recvWindow={}&timestamp={}", recv_window, server_time)
     } else {
-        format!("{}&recvWindow={}&timestamp={}", query, recv_window, server_time)
+        format!(
+            "{}&recvWindow={}&timestamp={}",
+            query, recv_window, server_time
+        )
     };
 
     let signature = sign(secret_key, &signed);

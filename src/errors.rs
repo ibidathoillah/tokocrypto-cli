@@ -56,7 +56,9 @@ impl TokocryptoError {
     pub fn retryable(&self) -> bool {
         matches!(
             self,
-            TokocryptoError::Network(_) | TokocryptoError::RateLimit(_) | TokocryptoError::WebSocket(_)
+            TokocryptoError::Network(_)
+                | TokocryptoError::RateLimit(_)
+                | TokocryptoError::WebSocket(_)
         )
     }
 

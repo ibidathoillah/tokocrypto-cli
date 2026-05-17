@@ -61,15 +61,16 @@ impl AccountCommand {
                 CommandOutput::new(result, format!("Asset Info — {}", asset_upper))
             }
 
-            Self::Trades { symbol, from_id, limit } => {
+            Self::Trades {
+                symbol,
+                from_id,
+                limit,
+            } => {
                 let sym = symbol.to_uppercase();
                 let limit_str = limit.to_string();
                 let from_id_str = from_id.map(|id| id.to_string());
 
-                let mut params = vec![
-                    ("symbol", sym.as_str()),
-                    ("limit", limit_str.as_str())
-                ];
+                let mut params = vec![("symbol", sym.as_str()), ("limit", limit_str.as_str())];
 
                 if let Some(ref fid) = from_id_str {
                     params.push(("fromId", fid.as_str()));

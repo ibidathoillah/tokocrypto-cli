@@ -15,6 +15,59 @@ use crate::commands::{
 use crate::errors::TokocryptoError;
 use crate::output::{CommandOutput, OutputFormat};
 
+pub(crate) fn normalize_pair(pair: &str) -> String {
+    pair.replace(['_', '-', '/'], "").to_uppercase()
+}
+
+pub(crate) fn normalize_pair_list(pairs: &str) -> String {
+    pairs
+        .split(',')
+        .map(str::trim)
+        .filter(|pair| !pair.is_empty())
+        .map(normalize_pair)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+pub(crate) fn normalize_pair_ws(pair: &str, symbol_type: u32) -> String {
+    let compact = normalize_pair(pair).to_lowercase();
+    if symbol_type == 2 {
+        for quote in ["bidr", "usdt", "idr", "btc", "eth", "bnb"] {
+            if let Some(base) = compact.strip_suffix(quote) {
+                if !base.is_empty() {
+                    return format!("{}_{}", base, quote);
+                }
+            }
+        }
+    }
+    compact
+}
+
+#[cfg(test)]
+mod pair_tests {
+    use super::*;
+
+    #[test]
+    fn normalizes_pair_for_api() {
+        assert_eq!(normalize_pair("TKOIDR"), "TKOIDR");
+        assert_eq!(normalize_pair("tko_idr"), "TKOIDR");
+        assert_eq!(normalize_pair("tko-idr"), "TKOIDR");
+        assert_eq!(normalize_pair("tko/idr"), "TKOIDR");
+    }
+
+    #[test]
+    fn normalizes_pair_list_for_api() {
+        assert_eq!(normalize_pair_list("tko_idr, btc-usdt"), "TKOIDR,BTCUSDT");
+    }
+
+    #[test]
+    fn normalizes_pair_for_websocket() {
+        assert_eq!(normalize_pair_ws("TKO_IDR", 1), "tkoidr");
+        assert_eq!(normalize_pair_ws("TKO-IDR", 2), "tko_idr");
+        assert_eq!(normalize_pair_ws("TKOIDR", 2), "tko_idr");
+    }
+}
+
 /// Global application context.
 #[derive(Clone)]
 pub struct AppContext {
@@ -321,27 +374,40 @@ pub async fn dispatch_non_shell(
         Command::Ping => market::MarketCommand::Ping.execute(ctx).await,
         Command::ServerTime => market::MarketCommand::ServerTime.execute(ctx).await,
         Command::Symbols => market::MarketCommand::Symbols.execute(ctx).await,
-        Command::ExecutionRules { pair, pairs, status } => {
+        Command::ExecutionRules {
+            pair,
+            pairs,
+            status,
+        } => {
             market::MarketCommand::ExecutionRules {
-                symbol: pair,
-                symbols: pairs,
+                symbol: pair.map(|pair| normalize_pair(&pair)),
+                symbols: pairs.map(|pairs| normalize_pair_list(&pairs)),
                 status,
             }
             .execute(ctx)
             .await
         }
-        Command::Orderbook { pair, count, symbol_type } => {
+        Command::Orderbook {
+            pair,
+            count,
+            symbol_type,
+        } => {
             market::MarketCommand::Depth {
-                symbol: pair,
+                symbol: normalize_pair(&pair),
                 limit: count,
                 symbol_type,
             }
             .execute(ctx)
             .await
         }
-        Command::Trades { pair, since, count, symbol_type } => {
+        Command::Trades {
+            pair,
+            since,
+            count,
+            symbol_type,
+        } => {
             market::MarketCommand::Trades {
-                symbol: pair,
+                symbol: normalize_pair(&pair),
                 from_id: since,
                 limit: count,
                 symbol_type,
@@ -349,9 +415,16 @@ pub async fn dispatch_non_shell(
             .execute(ctx)
             .await
         }
-        Command::AggTrades { pair, since, start_time, end_time, count, symbol_type } => {
+        Command::AggTrades {
+            pair,
+            since,
+            start_time,
+            end_time,
+            count,
+            symbol_type,
+        } => {
             market::MarketCommand::AggTrades {
-                symbol: pair,
+                symbol: normalize_pair(&pair),
                 from_id: since,
                 start_time,
                 end_time,
@@ -361,9 +434,16 @@ pub async fn dispatch_non_shell(
             .execute(ctx)
             .await
         }
-        Command::Klines { pair, interval, start_time, end_time, count, symbol_type } => {
+        Command::Klines {
+            pair,
+            interval,
+            start_time,
+            end_time,
+            count,
+            symbol_type,
+        } => {
             market::MarketCommand::Klines {
-                symbol: pair,
+                symbol: normalize_pair(&pair),
                 interval,
                 start_time,
                 end_time,
@@ -380,7 +460,7 @@ pub async fn dispatch_non_shell(
         Command::Assets { asset } => account::AccountCommand::Assets { asset }.execute(ctx).await,
         Command::TradesHistory { pair, since, count } => {
             account::AccountCommand::Trades {
-                symbol: pair,
+                symbol: normalize_pair(&pair),
                 from_id: since,
                 limit: count,
             }
@@ -392,7 +472,14 @@ pub async fn dispatch_non_shell(
         Command::Order(cmd) => cmd.execute(ctx).await,
 
         // === Funding / Withdrawal Operations ===
-        Command::Withdraw { asset, volume, address, tag, memo, network } => {
+        Command::Withdraw {
+            asset,
+            volume,
+            address,
+            tag,
+            memo,
+            network,
+        } => {
             funding::FundingCommand::Withdraw {
                 coin: asset,
                 amount: volume,
@@ -406,13 +493,15 @@ pub async fn dispatch_non_shell(
         }
         Command::Deposit(sub) => {
             let funding_cmd = match sub {
-                DepositSubcommand::Status { asset, status, count } => {
-                    funding::FundingCommand::DepositHistory {
-                        coin: asset,
-                        status,
-                        limit: count,
-                    }
-                }
+                DepositSubcommand::Status {
+                    asset,
+                    status,
+                    count,
+                } => funding::FundingCommand::DepositHistory {
+                    coin: asset,
+                    status,
+                    limit: count,
+                },
                 DepositSubcommand::Addresses { asset, network } => {
                     funding::FundingCommand::DepositAddress {
                         coin: asset,
@@ -424,13 +513,15 @@ pub async fn dispatch_non_shell(
         }
         Command::Withdrawal(sub) => {
             let funding_cmd = match sub {
-                WithdrawalSubcommand::Status { asset, status, count } => {
-                    funding::FundingCommand::WithdrawHistory {
-                        coin: asset,
-                        status,
-                        limit: count,
-                    }
-                }
+                WithdrawalSubcommand::Status {
+                    asset,
+                    status,
+                    count,
+                } => funding::FundingCommand::WithdrawHistory {
+                    coin: asset,
+                    status,
+                    limit: count,
+                },
             };
             funding_cmd.execute(ctx).await
         }
@@ -449,7 +540,10 @@ pub async fn dispatch_non_shell(
 }
 
 /// Dispatch the parsed command to its executor.
-pub async fn dispatch(ctx: &AppContext, command: Command) -> Result<CommandOutput, TokocryptoError> {
+pub async fn dispatch(
+    ctx: &AppContext,
+    command: Command,
+) -> Result<CommandOutput, TokocryptoError> {
     match command {
         Command::Shell => {
             utility::run_shell(ctx).await?;

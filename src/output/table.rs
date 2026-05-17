@@ -215,8 +215,16 @@ fn orderbook_to_string(value: &Value) -> String {
             .filter_map(|a| {
                 let arr = a.as_array()?;
                 Some((
-                    arr.first()?.as_str().or_else(|| arr.first()?.as_str()).unwrap_or("?").to_string(),
-                    arr.get(1)?.as_str().or_else(|| arr.get(1)?.as_str()).unwrap_or("?").to_string(),
+                    arr.first()?
+                        .as_str()
+                        .or_else(|| arr.first()?.as_str())
+                        .unwrap_or("?")
+                        .to_string(),
+                    arr.get(1)?
+                        .as_str()
+                        .or_else(|| arr.get(1)?.as_str())
+                        .unwrap_or("?")
+                        .to_string(),
                 ))
             })
             .collect();
