@@ -258,7 +258,7 @@ impl OrderCommand {
             }
 
             Self::OpenOrders { pair, count } => {
-                let sym = normalize_pair(pair);
+                let sym = crate::normalize_pair(pair);
                 let limit_str = count.to_string();
                 let params = vec![
                     ("symbol", sym.as_str()),
@@ -276,7 +276,7 @@ impl OrderCommand {
                 r#type,
                 from_id,
             } => {
-                let sym = normalize_pair(pair);
+                let sym = crate::normalize_pair(pair);
                 let limit_str = count.to_string();
                 let type_str = r#type.to_string();
                 let mut params = vec![
@@ -303,7 +303,7 @@ impl OrderCommand {
                 stop_limit_price,
                 list_client_id,
             } => {
-                let sym = normalize_pair(pair);
+                let sym = crate::normalize_pair(pair);
                 let side_code = match side.to_uppercase().as_str() {
                     "BUY" => "0",
                     "SELL" => "1",
@@ -347,7 +347,7 @@ impl OrderCommand {
         iceberg_qty: Option<&str>,
     ) -> Result<CommandOutput, TokocryptoError> {
         let client = &ctx.client;
-        let sym = normalize_pair(symbol);
+        let sym = crate::normalize_pair(symbol);
 
         let side_code = match side {
             "BUY" => "0",

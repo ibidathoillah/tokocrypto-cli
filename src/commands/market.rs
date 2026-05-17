@@ -153,10 +153,10 @@ impl MarketCommand {
                 let ss_str;
                 let stat_str;
                 if let Some(s) = symbol {
-                    s_str = s.replace("_", "").to_uppercase();
+                    s_str = crate::normalize_pair(s);
                     params.push(("symbol", s_str.as_str()));
                 } else if let Some(ss) = symbols {
-                    ss_str = ss.replace("_", "").to_uppercase();
+                    ss_str = scrate::normalize_pair(s);
                     params.push(("symbols", ss_str.as_str()));
                 } else if let Some(st) = status {
                     stat_str = st.to_uppercase();
@@ -184,7 +184,7 @@ impl MarketCommand {
                 let result = if sym_type == 1 {
                     // Symbol type 1 uses https://www.tokocrypto.site/api/v3/depth
                     // Replace _ of symbol with empty string
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     let endpoint = format!("{}/api/v3/depth", crate::config::DEFAULT_SITE_HOST);
                     client
                         .get_public(
@@ -194,7 +194,7 @@ impl MarketCommand {
                         .await?
                 } else {
                     // Symbol type 3 uses https://cloudme-toko.2meta.app/api/v1/depth
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     let endpoint = format!("{}/api/v1/depth", crate::config::CLOUDME_HOST);
                     client
                         .get_public(
@@ -226,7 +226,7 @@ impl MarketCommand {
                 let mut params = vec![("limit", limit_str.as_str())];
 
                 let result = if sym_type == 1 {
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     params.push(("symbol", clean_symbol.as_str()));
                     if let Some(ref fid) = from_id_str {
                         params.push(("fromId", fid.as_str()));
@@ -234,7 +234,7 @@ impl MarketCommand {
                     let endpoint = format!("{}/api/v3/trades", crate::config::DEFAULT_SITE_HOST);
                     client.get_public(&endpoint, &params).await?
                 } else {
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     params.push(("symbol", clean_symbol.as_str()));
                     if let Some(ref fid) = from_id_str {
                         params.push(("fromId", fid.as_str()));
@@ -275,12 +275,12 @@ impl MarketCommand {
                 }
 
                 let result = if sym_type == 1 {
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     params.push(("symbol", clean_symbol.as_str()));
                     let endpoint = format!("{}/api/v3/aggTrades", crate::config::DEFAULT_SITE_HOST);
                     client.get_public(&endpoint, &params).await?
                 } else {
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     params.push(("symbol", clean_symbol.as_str()));
                     let endpoint = format!("{}/api/v1/aggTrades", crate::config::CLOUDME_HOST);
                     client.get_public(&endpoint, &params).await?
@@ -321,12 +321,12 @@ impl MarketCommand {
                 }
 
                 let result = if sym_type == 1 {
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     params.push(("symbol", clean_symbol.as_str()));
                     let endpoint = format!("{}/api/v3/klines", crate::config::DEFAULT_SITE_HOST);
                     client.get_public(&endpoint, &params).await?
                 } else {
-                    let clean_symbol = symbol.replace("_", "").to_uppercase();
+                    let clean_symbol = crate::normalize_pair(symbol);
                     params.push(("symbol", clean_symbol.as_str()));
                     let endpoint = format!("{}/api/v1/klines", crate::config::CLOUDME_HOST);
                     client.get_public(&endpoint, &params).await?
@@ -343,7 +343,7 @@ impl MarketCommand {
 /// Helper function to detect symbol type via GET /open/v1/common/symbols
 pub async fn detect_symbol_type(client: &crate::client::TokocryptoClient, symbol: &str) -> u32 {
     let sym_upper = symbol.to_uppercase();
-    let clean_upper = symbol.replace("_", "").to_uppercase();
+    let clean_upper = crate::normalize_pair(symbol);
     if let Ok(res) = client.get_public("/open/v1/common/symbols", &[]).await {
         if let Some(list) = res["data"]["list"].as_array() {
             for item in list {

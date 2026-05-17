@@ -66,7 +66,7 @@ impl AccountCommand {
                 from_id,
                 limit,
             } => {
-                let sym = symbol.to_uppercase();
+                let sym = crate::normalize_pair(symbol);
                 let limit_str = limit.to_string();
                 let from_id_str = from_id.map(|id| id.to_string());
 
