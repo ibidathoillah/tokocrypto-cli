@@ -349,7 +349,7 @@ pub async fn detect_symbol_type(client: &crate::client::TokocryptoClient, symbol
             for item in list {
                 if let Some(s) = item["symbol"].as_str() {
                     let s_upper = s.to_uppercase();
-                    if s_upper == sym_upper || s_upper.replace("_", "") == clean_upper {
+                    if s_upper == sym_upper || crate::normalize_pair(s) == clean_upper {
                         return item["type"].as_u64().unwrap_or(3) as u32;
                     }
                 }
