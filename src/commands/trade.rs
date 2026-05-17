@@ -5,11 +5,11 @@ use crate::output::CommandOutput;
 use crate::AppContext;
 
 #[derive(Debug, Subcommand)]
-pub enum TradeCommand {
+pub enum OrderCommand {
     /// Place a buy order
     Buy {
         /// Trading pair symbol (e.g., TKO_BIDR, BTC_USDT)
-        symbol: String,
+        pair: String,
 
         /// Order type (LIMIT, MARKET, STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, TAKE_PROFIT_LIMIT, LIMIT_MAKER)
         #[arg(short = 't', long, default_value = "LIMIT")]
@@ -20,8 +20,8 @@ pub enum TradeCommand {
         price: Option<String>,
 
         /// Order quantity (base asset)
-        #[arg(short, long)]
-        quantity: Option<String>,
+        #[arg(short = 'v', long)]
+        volume: Option<String>,
 
         /// Spend amount in quote asset (for MARKET buy orders)
         #[arg(long)]
@@ -47,7 +47,7 @@ pub enum TradeCommand {
     /// Place a sell order
     Sell {
         /// Trading pair symbol (e.g., TKO_BIDR, BTC_USDT)
-        symbol: String,
+        pair: String,
 
         /// Order type
         #[arg(short = 't', long, default_value = "LIMIT")]
@@ -58,8 +58,8 @@ pub enum TradeCommand {
         price: Option<String>,
 
         /// Order quantity (base asset)
-        #[arg(short, long)]
-        quantity: Option<String>,
+        #[arg(short = 'v', long)]
+        volume: Option<String>,
 
         /// Client order ID (optional)
         #[arg(long)]
@@ -103,21 +103,21 @@ pub enum TradeCommand {
     /// List current open orders
     OpenOrders {
         /// Trading pair symbol (e.g., TKO_BIDR)
-        symbol: String,
+        pair: String,
 
         /// Limit number of open orders (default: 500)
         #[arg(short, long, default_value = "500")]
-        limit: u32,
+        count: u32,
     },
 
     /// List all orders (active, canceled, or filled)
     AllOrders {
         /// Trading pair symbol (e.g., TKO_BIDR)
-        symbol: String,
+        pair: String,
 
         /// Limit number of orders (default: 500)
         #[arg(short, long, default_value = "500")]
-        limit: u32,
+        count: u32,
 
         /// Filter by order type (-1 = all, 1 = open, 2 = history)
         #[arg(short, long, default_value = "-1")]
@@ -131,15 +131,15 @@ pub enum TradeCommand {
     /// Place a new OCO (One-Cancels-the-Other) order
     Oco {
         /// Trading pair symbol
-        symbol: String,
+        pair: String,
 
         /// Order side (BUY or SELL)
         #[arg(long)]
         side: String,
 
         /// Order quantity
-        #[arg(short, long)]
-        quantity: String,
+        #[arg(short = 'v', long)]
+        volume: String,
 
         /// Limit price
         #[arg(short, long)]
@@ -159,16 +159,16 @@ pub enum TradeCommand {
     },
 }
 
-impl TradeCommand {
+impl OrderCommand {
     pub async fn execute(&self, ctx: &AppContext) -> Result<CommandOutput, TokocryptoError> {
         let client = &ctx.client;
 
         let output = match self {
             Self::Buy {
-                symbol,
+                pair,
                 r#type,
                 price,
-                quantity,
+                volume,
                 quote_order_qty,
                 client_id,
                 time_in_force,
@@ -177,11 +177,11 @@ impl TradeCommand {
             } => {
                 self.place_order(
                     ctx,
-                    symbol,
+                    pair,
                     "BUY",
                     r#type,
                     price.as_deref(),
-                    quantity.as_deref(),
+                    volume.as_deref(),
                     quote_order_qty.as_deref(),
                     client_id.as_deref(),
                     time_in_force.as_deref(),
@@ -192,10 +192,10 @@ impl TradeCommand {
             }
 
             Self::Sell {
-                symbol,
+                pair,
                 r#type,
                 price,
-                quantity,
+                volume,
                 client_id,
                 time_in_force,
                 stop_price,
@@ -203,11 +203,11 @@ impl TradeCommand {
             } => {
                 self.place_order(
                     ctx,
-                    symbol,
+                    pair,
                     "SELL",
                     r#type,
                     price.as_deref(),
-                    quantity.as_deref(),
+                    volume.as_deref(),
                     None,
                     client_id.as_deref(),
                     time_in_force.as_deref(),
@@ -249,9 +249,9 @@ impl TradeCommand {
                 CommandOutput::new(result, format!("Order Info — {}", order_id))
             }
 
-            Self::OpenOrders { symbol, limit } => {
-                let sym = symbol.to_uppercase();
-                let limit_str = limit.to_string();
+            Self::OpenOrders { pair, count } => {
+                let sym = pair.to_uppercase();
+                let limit_str = count.to_string();
                 let params = vec![
                     ("symbol", sym.as_str()),
                     ("limit", limit_str.as_str()),
@@ -262,9 +262,9 @@ impl TradeCommand {
                 CommandOutput::new(result, format!("Open Orders — {}", sym))
             }
 
-            Self::AllOrders { symbol, limit, r#type, from_id } => {
-                let sym = symbol.to_uppercase();
-                let limit_str = limit.to_string();
+            Self::AllOrders { pair, count, r#type, from_id } => {
+                let sym = pair.to_uppercase();
+                let limit_str = count.to_string();
                 let type_str = r#type.to_string();
                 let mut params = vec![
                     ("symbol", sym.as_str()),
@@ -282,15 +282,15 @@ impl TradeCommand {
             }
 
             Self::Oco {
-                symbol,
+                pair,
                 side,
-                quantity,
+                volume,
                 price,
                 stop_price,
                 stop_limit_price,
                 list_client_id,
             } => {
-                let sym = symbol.to_uppercase();
+                let sym = pair.to_uppercase();
                 let side_code = match side.to_uppercase().as_str() {
                     "BUY" => "0",
                     "SELL" => "1",
@@ -300,7 +300,7 @@ impl TradeCommand {
                 let mut params = vec![
                     ("symbol", sym.as_str()),
                     ("side", side_code),
-                    ("quantity", quantity.as_str()),
+                    ("quantity", volume.as_str()),
                     ("price", price.as_str()),
                     ("stopPrice", stop_price.as_str()),
                     ("stopLimitPrice", stop_limit_price.as_str()),

@@ -133,11 +133,11 @@ mod tests {
         let registry = ToolRegistry::build();
         assert!(!registry.tools().is_empty());
 
-        // Find tokocrypto_market_symbols
-        let entry = registry.get_tool("tokocrypto_market_symbols");
+        // Find tokocrypto_symbols
+        let entry = registry.get_tool("tokocrypto_symbols");
         assert!(entry.is_some());
         let entry = entry.unwrap();
-        assert_eq!(entry.command_path, vec!["market", "symbols"]);
+        assert_eq!(entry.command_path, vec!["symbols"]);
         assert!(entry.tool.description.is_some());
     }
 }

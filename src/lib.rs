@@ -21,6 +21,7 @@ pub struct AppContext {
     pub client: TokocryptoClient,
     pub format: OutputFormat,
     pub verbose: bool,
+    pub yes: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -49,6 +50,10 @@ pub struct Cli {
     #[arg(short, long, global = true)]
     pub verbose: bool,
 
+    /// Skip confirmation prompts for destructive operations
+    #[arg(long, alias = "force", global = true)]
+    pub yes: bool,
+
     /// Override API host URL
     #[arg(long, global = true)]
     pub host: Option<String>,
@@ -59,22 +64,184 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Market data (public, no API key needed)
-    #[command(subcommand)]
-    Market(market::MarketCommand),
+    // === Public Market Commands (originally nested under Market) ===
+    /// Test connectivity to the REST API
+    Ping,
 
-    /// Account information (requires API key)
-    #[command(subcommand)]
-    Account(account::AccountCommand),
+    /// Get the current server time
+    ServerTime,
 
-    /// Trading operations (requires API key)
-    #[command(subcommand)]
-    Trade(trade::TradeCommand),
+    /// Get supported trading symbols and rules
+    Symbols,
 
-    /// Funding: withdrawals, deposits, addresses
-    #[command(subcommand)]
-    Funding(funding::FundingCommand),
+    /// Query symbol execution rules (Price Range)
+    ExecutionRules {
+        /// Query for a single symbol
+        #[arg(long)]
+        pair: Option<String>,
 
+        /// Query for multiple symbols (comma separated)
+        #[arg(long)]
+        pairs: Option<String>,
+
+        /// Filter by symbol status (TRADING, HALT, BREAK)
+        #[arg(long)]
+        status: Option<String>,
+    },
+
+    /// Get order book depth
+    Orderbook {
+        /// Trading pair symbol (e.g., BTC_USDT or TKO_BIDR)
+        pair: String,
+
+        /// Limit number of price levels (default: 100, max: 5000)
+        #[arg(short, long, default_value = "100")]
+        count: u32,
+
+        /// Manual symbol type override (1 - Main, 2 - Next, 3 - Nextme)
+        #[arg(long)]
+        symbol_type: Option<u32>,
+    },
+
+    /// Get recent trades
+    Trades {
+        /// Trading pair symbol
+        pair: String,
+
+        /// Start from this trade ID
+        #[arg(long, alias = "from-id")]
+        since: Option<i64>,
+
+        /// Limit number of trades (default: 500, max: 1000)
+        #[arg(short, long, default_value = "500")]
+        count: u32,
+
+        /// Manual symbol type override
+        #[arg(long)]
+        symbol_type: Option<u32>,
+    },
+
+    /// Get compressed/aggregate trades list
+    AggTrades {
+        /// Trading pair symbol
+        pair: String,
+
+        /// Trade ID to fetch from
+        #[arg(long, alias = "from-id")]
+        since: Option<i64>,
+
+        /// Start time in milliseconds
+        #[arg(long)]
+        start_time: Option<i64>,
+
+        /// End time in milliseconds
+        #[arg(long)]
+        end_time: Option<i64>,
+
+        /// Limit number of trades (default: 500, max: 1000)
+        #[arg(short, long, default_value = "500")]
+        count: u32,
+
+        /// Manual symbol type override
+        #[arg(long)]
+        symbol_type: Option<u32>,
+    },
+
+    /// Get kline/candlestick data bars
+    Klines {
+        /// Trading pair symbol
+        pair: String,
+
+        /// Chart interval (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M)
+        #[arg(short, long, default_value = "1h")]
+        interval: String,
+
+        /// Start time in milliseconds
+        #[arg(long)]
+        start_time: Option<i64>,
+
+        /// End time in milliseconds
+        #[arg(long)]
+        end_time: Option<i64>,
+
+        /// Limit number of bars (default: 500, max: 1000)
+        #[arg(short, long, default_value = "500")]
+        count: u32,
+
+        /// Manual symbol type override
+        #[arg(long)]
+        symbol_type: Option<u32>,
+    },
+
+    // === Account & Balance Commands (originally nested under Account) ===
+    /// Get current account details (commissions, permissions)
+    AccountInfo,
+
+    /// Get non-zero asset balances
+    Balance,
+
+    /// Get details of a specific asset
+    Assets {
+        /// Asset name (e.g., ADA, BTC, USDT)
+        asset: String,
+    },
+
+    /// Get your trade history for a symbol
+    TradesHistory {
+        /// Trading pair symbol (e.g., BTC_USDT)
+        pair: String,
+
+        /// Start from this trade ID
+        #[arg(long, alias = "from-id")]
+        since: Option<i64>,
+
+        /// Limit number of trades (default: 500, max: 1000)
+        #[arg(short, long, default_value = "500")]
+        count: u32,
+    },
+
+    // === Trading Operations (originally nested under Trade) ===
+    /// Place and manage orders
+    #[command(subcommand)]
+    Order(trade::OrderCommand),
+
+    // === Funding / Withdrawal Operations (originally nested under Funding) ===
+    /// Withdraw crypto to an external address
+    Withdraw {
+        /// Asset to withdraw (e.g., BTC, USDT, TKO)
+        #[arg(long)]
+        asset: String,
+
+        /// Amount to withdraw
+        #[arg(long)]
+        volume: String,
+
+        /// Target wallet address
+        #[arg(long)]
+        address: String,
+
+        /// Address description tag (default: "Withdrawal Address")
+        #[arg(long, default_value = "Withdrawal Address")]
+        tag: String,
+
+        /// Memo or Tag for coins that require it (e.g. XRP, EOS)
+        #[arg(long)]
+        memo: Option<String>,
+
+        /// Network to withdraw on (e.g. BSC, ETH, TRX)
+        #[arg(long)]
+        network: Option<String>,
+    },
+
+    /// Manage cryptocurrency deposits
+    #[command(subcommand)]
+    Deposit(DepositSubcommand),
+
+    /// Manage cryptocurrency withdrawals
+    #[command(subcommand)]
+    Withdrawal(WithdrawalSubcommand),
+
+    // === WS, Paper, Auth, Shell, Mcp ===
     /// WebSocket real-time data streams
     #[command(subcommand)]
     Ws(websocket::WebSocketCommand),
@@ -87,14 +254,60 @@ pub enum Command {
     #[command(subcommand)]
     Auth(auth_cmds::AuthCommand),
 
-    /// Interactive shell (REPL)
+    /// Start interactive REPL shell
     Shell,
 
     /// Run as an MCP (Model Context Protocol) server
     Mcp {
-        /// Allow dangerous commands (trade, funding)
+        /// Allow dangerous commands (trade, funding) (ignored for now, present for compatibility)
         #[arg(long)]
         allow_dangerous: bool,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DepositSubcommand {
+    /// List crypto deposit history
+    Status {
+        /// Filter by asset (e.g., USDT)
+        #[arg(long)]
+        asset: Option<String>,
+
+        /// Filter by status (0: Pending, 6: Success, 1: Failed)
+        #[arg(long)]
+        status: Option<i32>,
+
+        /// Limit number of records (default: 500)
+        #[arg(short, long, default_value = "500")]
+        count: u32,
+    },
+
+    /// Get deposit address for a specific coin
+    Addresses {
+        /// Coin name (e.g., USDT, BTC)
+        asset: String,
+
+        /// Network type (e.g. ETH, BSC, TRX)
+        #[arg(long)]
+        network: Option<String>,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum WithdrawalSubcommand {
+    /// List crypto withdraw history
+    Status {
+        /// Filter by asset
+        #[arg(long)]
+        asset: Option<String>,
+
+        /// Filter by status (0: Email Sent, 1: Cancelled, 2: Awaiting Approval, 3: Rejected, 4: Processing, 5: Failure, 6: Completed)
+        #[arg(long)]
+        status: Option<i32>,
+
+        /// Limit number of records (default: 500)
+        #[arg(short, long, default_value = "500")]
+        count: u32,
     },
 }
 
@@ -104,10 +317,125 @@ pub async fn dispatch_non_shell(
     command: Command,
 ) -> Result<CommandOutput, TokocryptoError> {
     match command {
-        Command::Market(cmd) => cmd.execute(ctx).await,
-        Command::Account(cmd) => cmd.execute(ctx).await,
-        Command::Trade(cmd) => cmd.execute(ctx).await,
-        Command::Funding(cmd) => cmd.execute(ctx).await,
+        // === Public Market Commands ===
+        Command::Ping => market::MarketCommand::Ping.execute(ctx).await,
+        Command::ServerTime => market::MarketCommand::ServerTime.execute(ctx).await,
+        Command::Symbols => market::MarketCommand::Symbols.execute(ctx).await,
+        Command::ExecutionRules { pair, pairs, status } => {
+            market::MarketCommand::ExecutionRules {
+                symbol: pair,
+                symbols: pairs,
+                status,
+            }
+            .execute(ctx)
+            .await
+        }
+        Command::Orderbook { pair, count, symbol_type } => {
+            market::MarketCommand::Depth {
+                symbol: pair,
+                limit: count,
+                symbol_type,
+            }
+            .execute(ctx)
+            .await
+        }
+        Command::Trades { pair, since, count, symbol_type } => {
+            market::MarketCommand::Trades {
+                symbol: pair,
+                from_id: since,
+                limit: count,
+                symbol_type,
+            }
+            .execute(ctx)
+            .await
+        }
+        Command::AggTrades { pair, since, start_time, end_time, count, symbol_type } => {
+            market::MarketCommand::AggTrades {
+                symbol: pair,
+                from_id: since,
+                start_time,
+                end_time,
+                limit: count,
+                symbol_type,
+            }
+            .execute(ctx)
+            .await
+        }
+        Command::Klines { pair, interval, start_time, end_time, count, symbol_type } => {
+            market::MarketCommand::Klines {
+                symbol: pair,
+                interval,
+                start_time,
+                end_time,
+                limit: count,
+                symbol_type,
+            }
+            .execute(ctx)
+            .await
+        }
+
+        // === Account & Balance Commands ===
+        Command::AccountInfo => account::AccountCommand::Info.execute(ctx).await,
+        Command::Balance => account::AccountCommand::Balance.execute(ctx).await,
+        Command::Assets { asset } => account::AccountCommand::Assets { asset }.execute(ctx).await,
+        Command::TradesHistory { pair, since, count } => {
+            account::AccountCommand::Trades {
+                symbol: pair,
+                from_id: since,
+                limit: count,
+            }
+            .execute(ctx)
+            .await
+        }
+
+        // === Trading Operations ===
+        Command::Order(cmd) => cmd.execute(ctx).await,
+
+        // === Funding / Withdrawal Operations ===
+        Command::Withdraw { asset, volume, address, tag, memo, network } => {
+            funding::FundingCommand::Withdraw {
+                coin: asset,
+                amount: volume,
+                address,
+                tag,
+                memo,
+                network,
+            }
+            .execute(ctx)
+            .await
+        }
+        Command::Deposit(sub) => {
+            let funding_cmd = match sub {
+                DepositSubcommand::Status { asset, status, count } => {
+                    funding::FundingCommand::DepositHistory {
+                        coin: asset,
+                        status,
+                        limit: count,
+                    }
+                }
+                DepositSubcommand::Addresses { asset, network } => {
+                    funding::FundingCommand::DepositAddress {
+                        coin: asset,
+                        network,
+                    }
+                }
+            };
+            funding_cmd.execute(ctx).await
+        }
+        Command::Withdrawal(sub) => {
+            let funding_cmd = match sub {
+                WithdrawalSubcommand::Status { asset, status, count } => {
+                    funding::FundingCommand::WithdrawHistory {
+                        coin: asset,
+                        status,
+                        limit: count,
+                    }
+                }
+            };
+            funding_cmd.execute(ctx).await
+        }
+
+        // === WS, Paper, Auth, Shell, Mcp ===
         Command::Ws(cmd) => cmd.execute(ctx).await,
         Command::Paper(cmd) => cmd.execute(ctx).await,
         Command::Auth(cmd) => cmd.execute(ctx).await,

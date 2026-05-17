@@ -1,160 +1,176 @@
-# 🪙 Tokocrypto Command Line Interface (CLI)
+# tokocrypto-cli
 
-> [!NOTE]
-> This is an unofficial, community-maintained CLI for Tokocrypto. It is not affiliated with, endorsed by, or maintained by Tokocrypto.
+Unofficial Rust CLI for Tokocrypto. Use it to inspect markets, manage account data, place spot orders, stream live WebSocket events, run a local interactive shell, and expose the same command surface to agents through MCP.
 
-[![Rust Version](https://img.shields.io/badge/rustc-1.75+-blue.svg?style=for-the-badge&logo=rust)](https://www.rust-lang.org)
-[![Cargo Build](https://img.shields.io/badge/build-passing-brightgreen.svg?style=for-the-badge&logo=cargo)](https://github.com)
-[![MCP Powered](https://img.shields.io/badge/MCP-Server-orange.svg?style=for-the-badge)](https://modelcontextprotocol.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/Rust-2021-000000?logo=rust)](https://www.rust-lang.org/)
+[![CLI](https://img.shields.io/badge/interface-terminal-2f855a)](#quick-start)
+[![WebSocket](https://img.shields.io/badge/websocket-live-2563eb)](#websocket-streaming)
+[![MCP](https://img.shields.io/badge/MCP-ready-7c3aed)](#mcp-server)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-An unofficial, ultra-high-performance, secure, and professional terminal companion for the **Tokocrypto Exchange** built completely in **Rust**. Featuring dynamic multi-host API routing, structured interactive shells with autocomplete, unified JSON/table renderers, and standard Model Context Protocol (MCP) capabilities for direct AI agent integration.
+## Highlights
 
-```
-       _____ ___  _  _____   ____ ______   ______  ______  
-      |_   _/ _ \| |/ / _ \ / ___|  _ \ \ / /  _ \_   _/ _ \ 
-        | || | | | ' / | | | |   | |_) \ V /| |_) || || | | |
-        | || |_| | . \ |_| | |___|  _ < | | |  __/ | || |_| |
-        |_| \___/|_|\_\___/ \____|_| \_\|_| |_|    |_| \___/ 
-```
+- Public market data: ping, server time, symbols, execution rules, order book, trades, aggregate trades, and klines.
+- Private account data: balances, account info, assets, open orders, all orders, and trade history.
+- Spot trading: market, limit, stop, and OCO order flows.
+- Funding: deposit address, deposit history, withdrawal history, and crypto withdrawals.
+- Dynamic multi-host routing: symbol type detection for Main, Next, and Nextme markets across REST and WebSocket hosts.
+- Real-time streams: market depth, private order events, and private balance events.
+- Interactive shell: REPL with autocomplete and persistent history at `~/.config/tokocrypto/history`.
+- Automation-friendly output: human tables by default, JSON envelopes with `-o json`.
+- Credential resolution: CLI flags, environment variables, or `~/.config/tokocrypto/config.toml`.
+- Agent support: MCP server mode for tool discovery and JSON-RPC execution.
 
----
+## Installation
 
-## ✨ Features
-
-- **⚡ Blazing Fast Asynchronous Engine**: Built on top of `tokio` and `reqwest` for maximum efficiency and parallel execution.
-- **🛡️ Secure Local Credentials**: Automatically stores API credentials locally in `~/.config/tokocrypto/config.toml` using strict standard `0600` filesystem permissions.
-- **🌐 Dynamic Multi-Host Routing**: Seamlessly detects symbol types (Type 1 Main, Type 2 Next, Type 3 Nextme) and auto-routes REST and WebSocket traffic to appropriate servers transparently.
-- **🎨 Premium Visual Formatting**: Beautiful terminal printouts using `comfy-table` with tailored alignments, currency groupings, spreads, and colorized buy/sell sides.
-- **🐚 Interactive REPL Shell**: Highly responsive command line shell with active autocomplete, colorized subcommands, and persistent history.
-- **🤖 Built-in MCP Server**: Exposes the entire command tree as a standard Model Context Protocol (MCP) tool server to integrate with LLMs and autonomous agents.
-- **🧪 100% Passing E2E Integration Suite**: Sanity check REST and WebSocket streams instantly against the live exchange.
-
----
-
-## 🏗️ Architectural Overview
-
-```mermaid
-graph TD
-    A[main.rs - CLI Entry] --> B[lib.rs - Command Router & Dispatcher]
-    B --> C[client.rs - REST Client / Rate Limiter]
-    B --> D[commands/* - Subcommand Implementations]
-    B --> E[mcp/* - Model Context Protocol Server]
-    D --> F[output/mod.rs - Unified Output Renderer]
-    F --> G[output/table.rs - Comfy-Table Layouts]
-    F --> H[output/json.rs - Raw JSON Mode]
-    C --> I[auth.rs - HMAC-SHA256 Signatures]
-    C --> J[config.rs - config.toml Permissions]
-```
-
----
-
-## 🚀 Installation & Build
-
-Ensure you have Rust and Cargo installed, then clone and build the binary:
+Install from source:
 
 ```bash
-# Clone the repository
 git clone git@bitbucket.org:tep2in/tokocrypto-cli.git
 cd tokocrypto-cli
+cargo install --path .
+```
 
-# Build the release executable
+Run from the checkout:
+
+```bash
+cargo build
+./target/debug/tokocrypto --help
+```
+
+Build a release binary:
+
+```bash
 cargo build --release
-
-# The compiled binary is available at:
 ./target/release/tokocrypto --version
 ```
 
----
+## Quick Start
 
-## 🔒 Authentication Configuration
-
-The CLI supports encrypted/signed private operations by securely storing credentials:
+Market data does not require credentials:
 
 ```bash
-# Set your API Key and Secret
-./target/release/tokocrypto auth set --api-key <YOUR_KEY> --api-secret <YOUR_SECRET>
-
-# Display configured credentials (fully masked for safety)
-./target/release/tokocrypto auth show
-
-# Test connectivity to the signed spot endpoints
-./target/release/tokocrypto auth test
+tokocrypto ping
+tokocrypto server-time
+tokocrypto symbols
+tokocrypto execution-rules --pair TKO_IDR
+tokocrypto orderbook TKO_IDR --count 10
+tokocrypto -o json trades TKO_IDR --count 5
 ```
 
-> [!IMPORTANT]
-> The configuration file is saved under `/root/.config/tokocrypto/config.toml` (or `~/.config/tokocrypto/config.toml`) and is strictly locked to `0600` permissions (read/write only by the owner).
-
----
-
-## ⚡ CLI Command Quick Reference
-
-### 📈 Market Data (Public)
-| Command | Parameter | Description |
-| :--- | :--- | :--- |
-| `tokocrypto market ping` | None | Test connectivity to REST API |
-| `tokocrypto market server-time` | None | Get official Tokocrypto server time |
-| `tokocrypto market symbols` | None | List all supported trading assets and metadata |
-| `tokocrypto market depth <symbol>` | `--limit <n>` | Get order book depth, bids, asks, and spreads |
-| `tokocrypto market trades <symbol>` | `--limit <n>` | Retrieve recent public trades |
-| `tokocrypto market agg-trades <symbol>`| `--limit <n>`| Query compressed aggregate trades |
-| `tokocrypto market klines <symbol>` | `--interval <int>`| Fetch kline/candlestick bars (e.g. `1m`, `1h`, `1d`) |
-| `tokocrypto market execution-rules` | `--symbol <sym>`| Query symbol price execution bounds (Price Range) |
-
-### 💼 Portfolio & Trading (Signed)
-| Command | Parameter | Description |
-| :--- | :--- | :--- |
-| `tokocrypto account info` | None | Show commission fees, UID, and trading permissions |
-| `tokocrypto account balance` | None | Show non-zero spot asset balances |
-| `tokocrypto account assets <coin>` | None | Show balance of a specific spot coin |
-| `tokocrypto trade buy <symbol>` | `--price <p> --qty <q>`| Submit a BUY order (Limit, Market, Stop Loss) |
-| `tokocrypto trade sell <symbol>` | `--price <p> --qty <q>`| Submit a SELL order |
-| `tokocrypto trade cancel` | `--order-id <id>` | Cancel an active order |
-| `tokocrypto trade query` | `--order-id <id>` | Check detailed status of a specific order |
-| `tokocrypto trade open-orders <sym>` | None | View active open orders for a trading symbol |
-| `tokocrypto trade oco <symbol>` | `--price <p> --qty <q>`| Submit a compound One-Cancels-the-Other order |
-
-### 💳 Wallet & Funding (Signed)
-| Command | Parameter | Description |
-| :--- | :--- | :--- |
-| `tokocrypto funding deposit-address <coin>`| `--network <net>` | View deposit address and memo for a coin |
-| `tokocrypto funding withdraw` | `--coin <c> --qty <q>`| Withdraw crypto assets to external address |
-| `tokocrypto funding deposit-history` | `--coin <c>` | List deposit transactions history |
-| `tokocrypto funding withdraw-history` | `--coin <c>` | List withdrawal transactions history |
-
-### 🔄 WebSocket Streams
-| Command | Parameter | Description |
-| :--- | :--- | :--- |
-| `tokocrypto ws depth <symbol>` | `--limit <n>` | Stream real-time book updates |
-| `tokocrypto ws balances` | None | Stream account balance changes when trades execute |
-| `tokocrypto ws orders` | None | Stream private order updates |
-
----
-
-## 🐚 Interactive REPL Shell
-
-Simply type `shell` to enter the colorized interactive mode:
+Configure private API credentials:
 
 ```bash
-./target/release/tokocrypto shell
+tokocrypto auth set --api-key YOUR_API_KEY --api-secret YOUR_API_SECRET
+tokocrypto auth test
+tokocrypto auth show
 ```
 
-- **Colorized Autocomplete**: Suggests commands and subcommands instantly as you type.
-- **Persistent Command History**: Automatically saves your shell command history to `~/.config/tokocrypto/history` under strict security permissions.
+Or use environment variables:
 
----
-
-## 🤖 Model Context Protocol (MCP) Server Integration
-
-This CLI integrates native **Model Context Protocol (MCP)** server capabilities via standard input/output (stdio). It dynamically exposes all the exchange subcommands as tools directly to LLMs, letting AI agents trade and analyze portfolios autonomously.
-
-### Run MCP Server:
 ```bash
-./target/release/tokocrypto mcp
+export TOKOCRYPTO_API_KEY=your_api_key
+export TOKOCRYPTO_API_SECRET=your_api_secret
 ```
 
-### Example Claude Desktop configuration:
-Append the following config to your `claude_desktop_config.json`:
+Credential priority:
+
+1. `--api-key` and `--api-secret`
+2. `TOKOCRYPTO_API_KEY` and `TOKOCRYPTO_API_SECRET`
+3. `~/.config/tokocrypto/config.toml`
+
+## Command Reference
+
+Global options:
+
+```text
+tokocrypto [OPTIONS] <COMMAND>
+
+Options:
+  -o, --output <table|json>      Output format [default: table]
+      --api-key <API_KEY>        API key override
+      --api-secret <API_SECRET>  API secret override
+  -v, --verbose                  Enable verbose logs
+      --host <HOST>              Override API host
+```
+
+### Market
+
+```bash
+tokocrypto ping
+tokocrypto server-time
+tokocrypto symbols
+tokocrypto execution-rules --pair TKO_IDR
+tokocrypto execution-rules --pairs TKO_IDR,BTC_USDT
+tokocrypto orderbook TKO_IDR --count 10
+tokocrypto trades TKO_IDR --count 5
+tokocrypto agg-trades TKO_IDR --count 5
+tokocrypto klines TKO_IDR --interval 1h --count 5
+```
+
+### Account
+
+```bash
+tokocrypto account-info
+tokocrypto balance
+tokocrypto assets USDT
+tokocrypto trades-history TKO_IDR --count 5
+```
+
+### Trading
+
+```bash
+tokocrypto order buy TKO_IDR -t LIMIT --price 1000 --volume 10
+tokocrypto order sell TKO_IDR -t MARKET --volume 10
+tokocrypto order cancel --order-id 123456
+tokocrypto order query --order-id 123456
+tokocrypto order open-orders TKO_IDR
+tokocrypto order all-orders TKO_IDR --count 5
+tokocrypto order oco TKO_IDR --side SELL --volume 10 --price 1200 --stop-price 900 --stop-limit-price 890
+```
+
+### Funding
+
+```bash
+tokocrypto deposit addresses USDT --network BSC
+tokocrypto deposit status --asset USDT
+tokocrypto withdrawal status --asset USDT
+tokocrypto withdraw --asset USDT --volume 100 --address 0x... --network BSC
+```
+
+### WebSocket Streaming
+
+Market depth:
+
+```bash
+tokocrypto ws depth TKO_IDR
+tokocrypto ws depth TKO_IDR --limit 1 --seconds 15
+```
+
+Private streams:
+
+```bash
+tokocrypto ws orders
+tokocrypto ws balances
+```
+
+The WebSocket client uses Tokocrypto symbol-type routing for Main, Next, and Nextme markets.
+
+### Interactive Shell
+
+```bash
+tokocrypto shell
+```
+
+The shell provides autocomplete, colorized subcommands, and persistent history.
+
+### MCP Server
+
+```bash
+tokocrypto mcp
+```
+
+Example MCP client configuration:
 
 ```json
 {
@@ -167,25 +183,74 @@ Append the following config to your `claude_desktop_config.json`:
 }
 ```
 
----
+The MCP server dynamically exposes the CLI command tree as tools over JSON-RPC stdio.
 
-## 🧪 Running E2E Integration Tests
+## E2E Testing
 
-Verify REST commands and WebSocket connections against the live exchange using the E2E verification test suite:
+The repository includes live API smoke tests:
 
 ```bash
-# Make the test script executable
-chmod +x ./scripts/e2e_test.sh
-
-# Run all public and private REST E2E tests
-./scripts/e2e_test.sh
-
-# Run E2E real-time WebSocket bounded smoke tests
+./scripts/e2e_test.sh --public
+./scripts/e2e_test.sh --private
 ./scripts/e2e_test.sh --ws
 ```
 
----
+Environment knobs:
 
-## 📄 License
+```bash
+TOKOCRYPTO_TEST_PAIR=TKO_IDR
+TOKOCRYPTO_TEST_COIN=USDT
+TOKOCRYPTO_BIN=./target/debug/tokocrypto
+```
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+Latest local verification:
+
+```text
+cargo test: 4 passed
+./scripts/e2e_test.sh --public: 20 passed
+./scripts/e2e_test.sh --private: 12 passed
+./scripts/e2e_test.sh --ws: 3 passed
+```
+
+## API Coverage
+
+- REST hosts: Tokocrypto Main, Next, and Nextme endpoints
+- WebSocket hosts: Tokocrypto Main, Next, and Nextme stream endpoints
+- API docs: https://www.tokocrypto.com/
+
+## Architecture
+
+```mermaid
+graph TD
+    A[tokocrypto binary] --> B[Clap command dispatcher]
+    B --> C[AppContext]
+    C --> D[TokocryptoClient]
+    D --> E[Dynamic REST host routing]
+    D --> F[Dynamic WebSocket host routing]
+    B --> G[commands/*]
+    B --> H[mcp/*]
+    G --> I[Unified JSON/Table output]
+```
+
+## Security
+
+- Credentials are stored with `0600` permissions when using `tokocrypto auth set`.
+- Prefer read-only API keys for account inspection and WebSocket monitoring.
+- Use IP restrictions on exchange API keys when possible.
+- Never commit real API keys, secrets, or listen keys.
+
+## Development
+
+```bash
+cargo fmt
+cargo test
+cargo build
+```
+
+## License
+
+MIT
+
+## Disclaimer
+
+This project is unofficial and is not affiliated with or endorsed by Tokocrypto. Cryptocurrency trading is risky; review commands carefully before using write-capable API keys.
