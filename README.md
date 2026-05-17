@@ -1,11 +1,14 @@
 # 🪙 Tokocrypto Command Line Interface (CLI)
 
+> [!NOTE]
+> This is an unofficial, community-maintained CLI for Tokocrypto. It is not affiliated with, endorsed by, or maintained by Tokocrypto.
+
 [![Rust Version](https://img.shields.io/badge/rustc-1.75+-blue.svg?style=for-the-badge&logo=rust)](https://www.rust-lang.org)
 [![Cargo Build](https://img.shields.io/badge/build-passing-brightgreen.svg?style=for-the-badge&logo=cargo)](https://github.com)
 [![MCP Powered](https://img.shields.io/badge/MCP-Server-orange.svg?style=for-the-badge)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-An ultra-high-performance, secure, and professional terminal companion for the **Tokocrypto Exchange** built completely in **Rust**. Featuring dynamic multi-host API routing, structured interactive shells with autocomplete, unified JSON/table renderers, and standard Model Context Protocol (MCP) capabilities for direct AI agent integration.
+An unofficial, ultra-high-performance, secure, and professional terminal companion for the **Tokocrypto Exchange** built completely in **Rust**. Featuring dynamic multi-host API routing, structured interactive shells with autocomplete, unified JSON/table renderers, and standard Model Context Protocol (MCP) capabilities for direct AI agent integration.
 
 ```
        _____ ___  _  _____   ____ ______   ______  ______  
