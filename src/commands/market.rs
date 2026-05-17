@@ -156,7 +156,7 @@ impl MarketCommand {
                     s_str = crate::normalize_pair(s);
                     params.push(("symbol", s_str.as_str()));
                 } else if let Some(ss) = symbols {
-                    ss_str = scrate::normalize_pair(s);
+                    ss_str = crate::normalize_pair(ss);
                     params.push(("symbols", ss_str.as_str()));
                 } else if let Some(st) = status {
                     stat_str = st.to_uppercase();

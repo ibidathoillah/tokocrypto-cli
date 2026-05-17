@@ -2,7 +2,7 @@ use clap::Subcommand;
 
 use crate::errors::TokocryptoError;
 use crate::output::CommandOutput;
-use crate::{normalize_pair, AppContext};
+use crate::AppContext;
 
 #[derive(Debug, Subcommand)]
 pub enum OrderCommand {
