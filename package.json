@@ -1,0 +1,31 @@
+{
+  "name": "tokocrypto-cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for the Tokocrypto cryptocurrency exchange",
+  "bin": {
+    "tokocrypto": "./bin/tokocrypto.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ibidathoillah/tokocrypto-cli.git"
+  },
+  "keywords": [
+    "tokocrypto",
+    "crypto",
+    "cli",
+    "trading",
+    "bitcoin"
+  ],
+  "author": "Ibida Thoillah",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ibidathoillah/tokocrypto-cli/issues"
+  },
+  "homepage": "https://github.com/ibidathoillah/tokocrypto-cli#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}
