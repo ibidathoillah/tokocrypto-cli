@@ -3,6 +3,7 @@ pub mod client;
 pub mod commands;
 pub mod config;
 pub mod errors;
+pub mod integration;
 pub mod mcp;
 pub mod output;
 
@@ -15,11 +16,11 @@ use crate::commands::{
 use crate::errors::TokocryptoError;
 use crate::output::{CommandOutput, OutputFormat};
 
-pub(crate) fn normalize_pair(pair: &str) -> String {
+pub fn normalize_pair(pair: &str) -> String {
     pair.replace(['_', '-', '/'], "").to_uppercase()
 }
 
-pub(crate) fn normalize_pair_list(pairs: &str) -> String {
+pub fn normalize_pair_list(pairs: &str) -> String {
     pairs
         .split(',')
         .map(str::trim)
@@ -29,7 +30,7 @@ pub(crate) fn normalize_pair_list(pairs: &str) -> String {
         .join(",")
 }
 
-pub(crate) fn normalize_pair_ws(pair: &str, symbol_type: u32) -> String {
+pub fn normalize_pair_ws(pair: &str, symbol_type: u32) -> String {
     let compact = normalize_pair(pair).to_lowercase();
     if symbol_type == 2 {
         for quote in ["bidr", "usdt", "idr", "btc", "eth", "bnb"] {
@@ -42,6 +43,8 @@ pub(crate) fn normalize_pair_ws(pair: &str, symbol_type: u32) -> String {
     }
     compact
 }
+
+pub use integration::prelude;
 
 #[cfg(test)]
 mod pair_tests {
